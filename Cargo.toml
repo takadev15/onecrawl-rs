@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "onecrawl-scouter",
+    "onecrawl-parser",
+]
