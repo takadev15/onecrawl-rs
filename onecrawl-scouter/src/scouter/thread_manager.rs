@@ -1,10 +1,9 @@
 #[path = "http/mod.rs"]
 mod http;
-use std::{collections::VecDeque, i32, u64};
 
-use self::http::http_worker;
 use crate::{scouter::thread_manager::http::http_worker::PageScraper, utils::envvars::CrawlerEnv};
-use tokio::task;
+use std::{collections::VecDeque, thread, time::Instant, u64};
+use tokio::runtime::Runtime;
 
 #[derive(Debug, Default)]
 pub struct ThreadManager {
@@ -13,8 +12,10 @@ pub struct ThreadManager {
     pub domain_key: u64,
 }
 
-pub async fn threads_manager(env: &mut CrawlerEnv) {
+pub fn threads_manager(env: &mut CrawlerEnv) {
     let mut threads_managers: Vec<ThreadManager> = Vec::new();
+    let mut threads = Vec::<thread::JoinHandle<()>>::new();
+    let start_time = Instant::now();
 
     for (index, url) in env.url_origin.iter().enumerate() {
         let mut thread_object = ThreadManager::default();
@@ -24,13 +25,39 @@ pub async fn threads_manager(env: &mut CrawlerEnv) {
         threads_managers.push(thread_object);
     }
 
-    for worker in threads_managers {
-        let mut page_worker = PageScraper {
-            url_list: worker.url_list,
-            url_visited: worker.url_visited,
-            thread_id: worker.domain_key,
-        };
+    loop {
+        let current_time = Instant::now();
+        let duration_recorded = current_time - start_time;
+        if duration_recorded.as_secs() >= env.crawl_duration {
+            break;
+        }
 
-        let join = task::spawn(page_worker.page_worker()).await;
+        for worker in &threads_managers {
+            if worker.url_list.is_empty() {
+                continue;
+            }
+            let page_worker = PageScraper {
+                url_list: worker.url_list.to_owned(),
+                // tld_id: worker.url_list.pop_front(),
+                url_visited: worker.url_visited.to_owned(),
+                thread_id: worker.domain_key,
+            };
+
+            let handle = thread::spawn(move || {
+                let result = tokio::task::block_in_place(|| {
+                    Runtime::new().unwrap().block_on(page_worker.page_worker())
+                });
+            });
+            threads.push(handle);
+        }
+        break;
     }
+
+    for handle in threads {
+        handle.join().unwrap();
+    }
+}
+
+fn listen_message() {
+
 }
