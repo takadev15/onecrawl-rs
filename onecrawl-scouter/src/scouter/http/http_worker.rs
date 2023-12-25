@@ -1,6 +1,7 @@
+use dotenv::Result;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
+use std::{collections::VecDeque, time::Duration};
 use tokio::{net::UnixStream, io::AsyncWriteExt, time::Instant};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -18,7 +19,7 @@ pub struct PageScraper {
 }
 
 impl PageScraper {
-    pub async fn page_worker(mut self) {
+    pub async fn page_worker(&mut self) -> Result<()> {
         println!("thread id : {}", self.thread_id);
         match self.url_list.pop_front().as_deref() {
             Some(url) => {
@@ -33,13 +34,15 @@ impl PageScraper {
                     .await
                     .expect("failed to get payload");
                 let duration = start.elapsed();
-                println!("{}", resp);
-                println!("time: {:?}", duration);
+                // println!("{}", resp);
+                println!("download duration: {:?}", duration);
             }
             None => {
                 println!("no url left");
             }
         }
+        tokio::time::sleep(Duration::from_secs(5)).await;
+        Ok(())
     }
 
     async fn send_message(self, body: &str, tld: &str) {
