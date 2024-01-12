@@ -54,9 +54,9 @@ impl PageScraper {
 
 impl RpcMessage {
     async fn send_message(&self) {
-        let serialized_message = serde_json::to_string(&self).unwrap();
+        let serialized_message = serde_json::to_string(&self).unwrap() + "/end_crawled_message";
         println!("{}",serialized_message);
-        let mut stream = UnixStream::connect("/tmp/temp-onecrawl").await.unwrap();
+        let mut stream = UnixStream::connect("/tmp/temp-onecrawl.sock").await.unwrap();
         stream
             .write_all(serialized_message.as_bytes())
             .await
