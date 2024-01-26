@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, io::Read};
 
 use html5ever::tendril::stream;
 use onecrawl_util::database::{
@@ -7,7 +7,7 @@ use onecrawl_util::database::{
 };
 use serde::{Serialize, Deserialize};
 use serde_json::Result;
-use tokio::net::{UnixListener, UnixStream};
+use std::os::unix::net::{UnixListener, UnixStream};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[path = "worker/worker.rs"]
@@ -20,28 +20,23 @@ pub async fn parser_controller() {
 
     let receiver = RpcHandler::default();
 
-    let listener = UnixListener::bind("/tmp/temp-onecrawl.sock").unwrap();
-    while let Ok((stream, _)) = listener.accept().await {
+    let listener = UnixListener::bind("/tmp/temp-onecrawl-page.sock").unwrap();
+    while let Ok((stream, _)) = listener.accept() {
         handle_client(stream).await;
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
-struct RpcHandler {
-    page_html: String,
-    tld_id: String,
-}
-
-impl RpcHandler {
-}
-
-async fn handle_client(mut stream: tokio::net::UnixStream) {
+async fn handle_client(mut stream: std::os::unix::net::UnixStream) {
     // Read a message from the client
     let mut buffer = [0; 1024];
     let mut message = String::new();
+    let mut n = 1;
 
     loop {
-        match stream.read(&mut buffer).await {
+        match stream.read(&mut buffer) {
+            Ok(0) => {
+                break;
+            }
             Ok(bytes_read) if bytes_read > 0 => {
                 let chunk = String::from_utf8_lossy(&buffer[..bytes_read]);
                 message.push_str(&chunk);
@@ -53,13 +48,17 @@ async fn handle_client(mut stream: tokio::net::UnixStream) {
                     //     // Process the message in a blocking thread
                     //     process_message(&message)
                     // }).await.unwrap();
-                    process_message(&message);
+                    process_message(&mut message);
 
                     // Clear the message buffer for the next message
                     message.clear();
                 }
+                println!("loop iteration number {}", n);
+                n = n + 1;
             }
-            Ok(_) => {}
+            Ok(_) => {
+                continue;
+            }
             Err(e) => {
                 eprintln!("error reading from socket: {}", e);
                 break;
@@ -68,6 +67,14 @@ async fn handle_client(mut stream: tokio::net::UnixStream) {
     }
 }
 
-fn process_message(message: &str) {
-    println!("{}", message);
+#[derive(Serialize, Deserialize, Debug, Default)]
+struct RpcHandler {
+    page_html: String,
+    tld_id: String,
+}
+
+fn process_message(message: &mut String) {
+    message.truncate(message.len() - 20);
+    let mut rpc_message: RpcHandler = serde_json::from_str(message).unwrap();
+    rpc_message.parse_html();
 }

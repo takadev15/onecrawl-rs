@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 pub mod scouter;
 pub mod utils;
 

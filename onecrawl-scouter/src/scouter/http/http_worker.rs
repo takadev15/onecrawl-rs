@@ -2,7 +2,7 @@ use dotenv::Result;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::{collections::VecDeque, time::Duration};
-use tokio::{io::AsyncWriteExt, net::UnixStream, time::Instant};
+use tokio::{io::AsyncWriteExt, net::{UnixListener, UnixStream}, time::Instant};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct RpcMessage {
@@ -13,7 +13,7 @@ struct RpcMessage {
 #[derive(Debug, Default)]
 pub struct PageScraper {
     pub url_list: VecDeque<String>,
-    // pub tld_id: String,
+    pub tld_id: String,
     pub url_visited: Vec<String>,
     pub thread_id: u64,
 }
@@ -39,7 +39,7 @@ impl PageScraper {
 
                 let send_message = RpcMessage {
                     page_html: resp,
-                    tld_id: "test id".to_owned(),
+                    tld_id: self.tld_id.to_owned(),
                 } ;
                 send_message.send_message().await;
             }
@@ -55,8 +55,10 @@ impl PageScraper {
 impl RpcMessage {
     async fn send_message(&self) {
         let serialized_message = serde_json::to_string(&self).unwrap() + "/end_crawled_message";
-        println!("{}",serialized_message);
-        let mut stream = UnixStream::connect("/tmp/temp-onecrawl.sock").await.unwrap();
+        println!("{}", serialized_message);
+        // let listener = UnixListener::bind("/tmp/temp-onecrawl-url.sock").unwrap();
+        // let addr = listener.local_addr().unwrap();
+        let mut stream = UnixStream::connect("/tmp/temp-onecrawl-page.sock").await.unwrap();
         stream
             .write_all(serialized_message.as_bytes())
             .await
