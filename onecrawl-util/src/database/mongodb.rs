@@ -1,16 +1,15 @@
 use std::ops::Deref;
 
-use mongodb::{bson::doc, results::InsertOneResult};
+use mongodb::{
+    bson::{doc, oid::ObjectId, Bson},
+    results::{InsertManyResult, InsertOneResult},
+};
 use serde::{
-    de::{value, DeserializeOwned},
+    de::DeserializeOwned,
     Serialize,
 };
 
-mod crawling {
-    pub mod model;
-}
-
-mod page_images {
+pub mod crawling {
     pub mod model;
 }
 
@@ -18,23 +17,31 @@ pub mod page_information {
     pub mod model;
 }
 
-mod page_linking {
+pub mod page_images {
     pub mod model;
 }
 
-mod page_list {
+pub mod page_linking {
     pub mod model;
 }
 
-mod page_scripts {
+pub mod page_list {
     pub mod model;
 }
 
-mod page_styles {
+pub mod page_form {
     pub mod model;
 }
 
-mod page_tables {
+pub mod page_scripts {
+    pub mod model;
+}
+
+pub mod page_styles {
+    pub mod model;
+}
+
+pub mod page_tables {
     pub mod model;
 }
 
@@ -69,6 +76,22 @@ impl MongoDB {
         document: T,
     ) -> Result<InsertOneResult, mongodb::error::Error> {
         self.coll::<T>(collection).insert_one(document, None).await
+    }
+
+    pub async fn insert_bulk<T: Serialize>(
+        &self,
+        collection: &'static str,
+        documents: Vec<T>,
+    ) -> Result<InsertManyResult, mongodb::error::Error> {
+        self.coll::<T>(collection).insert_many(documents, None).await
+    }
+
+    pub fn get_inserted_id(&self, bson: Bson) -> Option<String> {
+        if let Bson::ObjectId(object_id) = bson {
+            Some(object_id.to_hex())
+        } else {
+            None
+        }
     }
 
     pub async fn check_value<T: DeserializeOwned>(

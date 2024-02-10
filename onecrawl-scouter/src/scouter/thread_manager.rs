@@ -2,7 +2,7 @@
 mod http;
 
 use crate::{scouter::thread_manager::http::http_worker::PageScraper, utils::envvars::CrawlerEnv};
-use std::{collections::VecDeque, thread, time::{Instant, Duration}, u64, sync::{Arc, atomic::{AtomicBool, Ordering}}, io::{Error, ErrorKind}};
+use std::{collections::VecDeque, io::{Error, ErrorKind}, result, sync::{Arc, atomic::{AtomicBool, Ordering}}, thread, time::{Instant, Duration}, u64};
 use serde::{Serialize, Deserialize};
 use tokio::{runtime::Runtime, net::UnixListener, io::AsyncReadExt};
 
@@ -31,24 +31,27 @@ pub async fn threads_manager(env: &mut CrawlerEnv) {
 
     let mut loop_counter = 0;
     let listener = UnixListener::bind("/tmp/temp-onecrawl-url.sock").unwrap();
+
     loop {
         let current_time = Instant::now();
         let duration_recorded = current_time - start_time;
         if duration_recorded.as_secs() >= env.crawl_duration {
             println!("crawl stopped at : {}", duration_recorded.as_secs());
+            for object in threads_managers {
+                println!("last visited urls : {:?}", object.url_visited);
+            }
             break;
         }
 
         if loop_counter > 0 {
             while let Ok((stream, _)) = listener.accept().await {
-                let url_rpc_handler = listen_message(stream).await;
+                let url_rpc_handler = listen_inbound_message(stream).await;
                 match url_rpc_handler {
                     Ok(handler ) => {
                         for worker in &mut threads_managers {
                             if worker.domain_key == handler.tld_id {
                                 for link in handler.links.to_owned() {
                                     worker.url_list.push_front(link);
-                                    println!("add queue");
                                 }
                             }
                         }
@@ -67,36 +70,38 @@ pub async fn threads_manager(env: &mut CrawlerEnv) {
             if worker.url_list.is_empty() {
                 continue;
             }
+
             let mut page_worker = PageScraper {
                 url_list: worker.url_list.to_owned(),
                 tld_id: worker.domain_key.to_owned(),
                 url_visited: worker.url_visited.to_owned(),
                 thread_id: thread_counters + 1,
             };
-            worker.url_list.pop_front();
 
-            page_worker.page_worker().await;
+            let url = worker.url_list.pop_front().unwrap();
+            worker.url_visited.push(url);
+            page_worker.url_visited = worker.url_visited.to_owned();
 
-            // let running_clone = running_clone.clone();
-            // let handle = thread::spawn(move || {
-            //     while running_clone.load(Ordering::Relaxed) {
-            //         let rt = Runtime::new().unwrap();
-            //         let result = rt.block_on(page_worker.page_worker());
-            //     }
-            // });
-            // threads.push(handle);
+            let running_clone = running_clone.clone();
+            let handle = thread::spawn(move || {
+                while running_clone.load(Ordering::Relaxed) {
+                    let rt = Runtime::new().unwrap();
+                    rt.block_on(page_worker.page_worker()).unwrap();
+                }
+            });
+            threads.push(handle);
             thread_counters = thread_counters + 1;
         }
-        println!("env duration : {}", env.crawl_duration);
+        // println!("env duration : {}", env.crawl_duration);
         // break;
         loop_counter = loop_counter + 1;
     }
 
-    // running.store(false, Ordering::Relaxed);
-    // println!("crawling duration : {:?}", Instant::now() - start_time);
-    // for handle in threads {
-    //     handle.join().unwrap();
-    // }
+    running.store(false, Ordering::Relaxed);
+    println!("crawling duration : {:?}", Instant::now() - start_time);
+    for handle in threads {
+        handle.join().unwrap();
+    }
 
 }
 
@@ -106,7 +111,7 @@ struct UrlRpcHandler {
     links: Vec<String>
 }
 
-async fn listen_message(mut stream: tokio::net::UnixStream) -> Result<UrlRpcHandler, Error> {
+async fn listen_inbound_message(mut stream: tokio::net::UnixStream) -> Result<UrlRpcHandler, Error> {
     // Read a message from the client
     let mut buffer = [0; 1024];
     let mut message = String::new();
@@ -127,18 +132,11 @@ async fn listen_message(mut stream: tokio::net::UnixStream) -> Result<UrlRpcHand
                     let url_rpc_message: UrlRpcHandler = serde_json::from_str(&message).map_err(|e| {
                         Error::new(ErrorKind::InvalidData, format!("Error passing message: {}", e))
                     })?;
-                    // Pass the message to a blocking thread for processing
-                    // let processing_result = tokio::task::spawn_blocking(move || {
-                    //     // Process the message in a blocking thread
-                    //     process_message(&message)
-                    // }).await.unwrap();
-                    // process_message(&mut message);
 
-                    // Clear the message buffer for the next message
                     message.clear();
                     return Ok(url_rpc_message);
                 }
-                println!("loop iteration number {}", n);
+                // println!("loop iteration number {}", n);
                 n = n + 1;
             }
             Ok(_) => {

@@ -1,6 +1,5 @@
-use std::{sync::{Arc, Mutex}, io::Read};
+use std::{io::Read, sync::{mpsc, Arc, Mutex}, thread};
 
-use html5ever::tendril::stream;
 use onecrawl_util::database::{
     connection,
     mongodb::{init_db, page_information::model::PageInformation, MongoDB},
@@ -16,21 +15,33 @@ mod worker;
 pub async fn parser_controller() {
     // unimplemented!();
     let client = connection::connect_db("root", "onecrawlrootpass").await;
-    // let client_db = init_db(client);
+    let client_db = init_db(client);
 
     let receiver = RpcHandler::default();
 
     let listener = UnixListener::bind("/tmp/temp-onecrawl-page.sock").unwrap();
     while let Ok((stream, _)) = listener.accept() {
-        handle_client(stream).await;
+        handle_client(stream, &client_db).await;
     }
 }
 
-async fn handle_client(mut stream: std::os::unix::net::UnixStream) {
+async fn handle_client(mut stream: std::os::unix::net::UnixStream, client: &MongoDB) {
     // Read a message from the client
     let mut buffer = [0; 1024];
     let mut message = String::new();
     let mut n = 1;
+
+    // let (sender, receiver) = mpsc::channel();
+    // let receiver = Arc::new(Mutex::new(receiver));
+    //
+    // let mut handler = Vec::<thread::JoinHandle<()>>::new();
+    // for _ in 0..2 {
+    //     let receiver = Arc::clone(&receiver);
+    //     let handle = thread::spawn(move || {
+    //         receiver.lock().unwrap().recv();
+    //     });
+    //     handler.push(handle);
+    // }
 
     loop {
         match stream.read(&mut buffer) {
@@ -48,12 +59,15 @@ async fn handle_client(mut stream: std::os::unix::net::UnixStream) {
                     //     // Process the message in a blocking thread
                     //     process_message(&message)
                     // }).await.unwrap();
-                    process_message(&mut message);
+                    // sender.send(process_message(&mut message, client));
+                    // thread::scope(|scope| {
+                    //     scope.spawn(|| process_message(&mut message, client));
+                    // });
+                    process_message(&mut message, client).await;
 
                     // Clear the message buffer for the next message
                     message.clear();
                 }
-                println!("loop iteration number {}", n);
                 n = n + 1;
             }
             Ok(_) => {
@@ -67,14 +81,15 @@ async fn handle_client(mut stream: std::os::unix::net::UnixStream) {
     }
 }
 
+async fn process_message(message: &mut String, client: &MongoDB) {
+    message.truncate(message.len() - 20);
+    let mut rpc_message: RpcHandler = serde_json::from_str(message).unwrap();
+    rpc_message.parse_html(client).await;
+}
+
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct RpcHandler {
     page_html: String,
     tld_id: String,
-}
-
-fn process_message(message: &mut String) {
-    message.truncate(message.len() - 20);
-    let mut rpc_message: RpcHandler = serde_json::from_str(message).unwrap();
-    rpc_message.parse_html();
+    visited_url: Vec<String>,
 }
