@@ -100,21 +100,29 @@ impl RpcHandler {
             if let Some(href) = link.attr("href") {
                 if href.starts_with("http://") || href.starts_with("https://") {
                     let base_url = Url::parse(&self.tld_id).unwrap();
-                    let outgoing_link = Url::parse(href).unwrap();
-
-                    let domain_check = outgoing_link
-                        .host_str()
-                        .map_or(false, |host| host.ends_with(base_url.host_str().unwrap()));
-                    if domain_check {
-                        if !self.visited_url.contains(&href.to_string()) {
-                            let page_link = PageLinking {
-                                page_id: page_id.to_owned(),
-                                outgoing_link: href.to_string(),
-                            };
-                            links.push(href.to_string());
-                            page_link_objects.push(page_link);
+                    // let outgoing_link = Url::parse(href);
+                    match Url::parse(href) {
+                        Ok(outgoing_link) => {
+                            let domain_check = outgoing_link
+                                .host_str()
+                                .map_or(false, |host| host.ends_with(base_url.host_str().unwrap()));
+                            if domain_check {
+                                if !self.visited_url.contains(&href.to_string()) {
+                                    let page_link = PageLinking {
+                                        page_id: page_id.to_owned(),
+                                        outgoing_link: href.to_string(),
+                                    };
+                                    links.push(href.to_string());
+                                    page_link_objects.push(page_link);
+                                }
+                            }
+                        }
+                        Err(error) => {
+                            eprintln!("Failed on parsing url {}. Error: {:?}", href, error);
+                            continue;
                         }
                     }
+
                 }
             }
         }

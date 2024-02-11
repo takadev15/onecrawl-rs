@@ -51,7 +51,9 @@ pub async fn threads_manager(env: &mut CrawlerEnv) {
                         for worker in &mut threads_managers {
                             if worker.domain_key == handler.tld_id {
                                 for link in handler.links.to_owned() {
-                                    worker.url_list.push_front(link);
+                                    if !worker.url_list.contains(&link) {
+                                        worker.url_list.push_front(link);
+                                    }
                                 }
                             }
                         }
