@@ -70,6 +70,17 @@ impl MongoDB {
         self.db().collection(collection)
     }
 
+    /// Insert a single data to monggodb's collection
+    ///
+    /// # Parameters
+    ///
+    /// - `collection`: Collection's name
+    /// - `document` : Serialized document that wanted to be inserted
+    ///
+    /// # Returns
+    ///
+    /// - `InsertOneResult`: Result
+    /// - `Error`: Error
     pub async fn insert_once<T: Serialize>(
         &self,
         collection: &'static str,
@@ -78,6 +89,12 @@ impl MongoDB {
         self.coll::<T>(collection).insert_one(document, None).await
     }
 
+    /// Insert multiple data to monggodb's collection
+    ///
+    /// # Parameters
+    ///
+    /// - `collection`: Collection's name
+    /// - `document` : Serialized array of documents that wanted to be inserted
     pub async fn insert_bulk<T: Serialize>(
         &self,
         collection: &'static str,

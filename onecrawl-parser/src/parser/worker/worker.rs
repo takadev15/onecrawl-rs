@@ -1,8 +1,9 @@
 use onecrawl_util::database::mongodb::{
     page_form::model::PageForm, page_images::model::PageImage, page_information,
     page_linking::model::PageLinking, page_list::model::PageList, page_scripts::model::PageScript,
-    page_styles::model::PageStyle, page_tables::model::PageTables, MongoDB,
+    page_styles::model::PageStyle, page_tables::model::PageTables,
 };
+use onecrawl_util::database::mongodb::MongoDB;
 use regex::Regex;
 use select::document::Document;
 use select::predicate::{Name, Text};
@@ -15,9 +16,16 @@ use url::Url;
 use super::RpcHandler;
 
 impl RpcHandler {
+
+    /// Function for parsing html string and store relevant data to the databases
+    ///
+    /// # Parameters
+    ///
+    ///- `client` : Monggodb connection pool's client
     pub async fn parse_html(&mut self, client: &MongoDB) {
         println!("Parsed url : {}", self.visited_url.last().unwrap());
         let document = Document::from(self.page_html.as_str());
+        let page_size = self.page_html.len();
 
         let mut html5 = false;
         let mut text = String::new();
@@ -25,18 +33,8 @@ impl RpcHandler {
             if let Some(article) = document.find(Name("article")).next() {
                 let mut visible_tex: Vec<&str> = Vec::new();
                 for node in article.find(Text) {
-                    if Regex::new(r"[\n]+")
-                        .unwrap()
-                        .is_match(node.as_text().unwrap())
-                    {
-                        continue;
-                    } else if Regex::new(r"[\t]+")
-                        .unwrap()
-                        .is_match(node.as_text().unwrap())
-                    {
-                        continue;
-                    } else {
-                        visible_tex.push(node.as_text().unwrap());
+                    if tag_visible(node) {
+                        visible_tex.push(node.as_text().unwrap().trim())
                     }
                 }
                 text = visible_tex.join(",")
@@ -47,7 +45,7 @@ impl RpcHandler {
                 let mut visible_tex: Vec<&str> = Vec::new();
                 for node in body.find(Text) {
                     if tag_visible(node) {
-                        visible_tex.push(node.as_text().unwrap());
+                        visible_tex.push(node.as_text().unwrap().trim());
                     }
                 }
                 text = visible_tex.join(",")
@@ -79,13 +77,14 @@ impl RpcHandler {
 
         let title = title.to_owned();
         let page_info_object = page_information::model::PageInformation {
+            crawl_id: self.crawl_id.to_owned(),
             url: self.visited_url.last().unwrap().to_string(),
             html5,
             title,
             description: description.to_owned(),
             keywords: keyword.to_owned(),
             content_text: text,
-            size_bytes: 200,
+            size_bytes: page_size,
         };
         let result = client
             .insert_once("page_informations", page_info_object)
@@ -244,8 +243,8 @@ struct UrlRpcHandler {
 impl UrlRpcHandler {
     fn send_message(&self) {
         let serialized_message = serde_json::to_string(&self).unwrap() + "/end_link_message";
-        // println!("{}", serialized_message);
         let mut stream = UnixStream::connect("/tmp/temp-onecrawl-url.sock").unwrap();
         stream.write_all(serialized_message.as_bytes()).unwrap();
+        drop(stream);
     }
 }

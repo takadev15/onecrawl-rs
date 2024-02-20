@@ -4,9 +4,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Crawling {
-    id_crawling: String,
-    start_url: String,
-    keyword: String,
-    total_page: u64,
-    duration_crawl: String,
+    pub start_url: String,
+    pub keyword: String,
+    pub total_page: u64,
+    pub duration_crawl: u64,
 }

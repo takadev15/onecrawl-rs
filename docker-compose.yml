@@ -2,6 +2,7 @@ version: '3.1'
 
 services:
   crawler-mongodb:
+    container_name: onecrawl-db
     image: mongo
     ports:
       - '27017:27017'
@@ -12,6 +13,7 @@ services:
       - ./crawldb-data:/data/db
 
   crawler-dashboard:
+    container_name: onecrawl-db-dashboard
     image: mongo-express
     ports:
       - 8081:8081

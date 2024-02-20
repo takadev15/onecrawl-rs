@@ -9,6 +9,7 @@ struct RpcMessage {
     page_html: String,
     tld_id: String,
     visited_url: Vec<String>,
+    crawl_id: String,
 }
 
 #[derive(Debug, Default)]
@@ -17,6 +18,7 @@ pub struct PageScraper {
     pub tld_id: String,
     pub url_visited: Vec<String>,
     pub thread_id: u64,
+    pub crawl_id: String,
 }
 
 impl PageScraper {
@@ -43,6 +45,7 @@ impl PageScraper {
                     page_html: resp,
                     tld_id: self.tld_id.to_owned(),
                     visited_url: self.url_visited.to_owned(),
+                    crawl_id: self.crawl_id.to_owned(),
                 } ;
                 send_message.send_message().await;
                 tokio::time::sleep(Duration::from_secs(10)).await;

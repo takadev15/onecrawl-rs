@@ -2,6 +2,10 @@
 mod http;
 
 use crate::{scouter::thread_manager::http::http_worker::PageScraper, utils::envvars::CrawlerEnv};
+use onecrawl_util::database::{
+    connection,
+    mongodb::{crawling::model::Crawling, init_db},
+};
 use std::{collections::VecDeque, io::{Error, ErrorKind}, result, sync::{Arc, atomic::{AtomicBool, Ordering}}, thread, time::{Instant, Duration}, u64};
 use serde::{Serialize, Deserialize};
 use tokio::{runtime::Runtime, net::UnixListener, io::AsyncReadExt};
@@ -15,12 +19,13 @@ pub struct ThreadManager {
 
 #[tokio::main]
 pub async fn threads_manager(env: &mut CrawlerEnv) {
+    let start_time = Instant::now();
+
     let running = Arc::new(AtomicBool::new(true));
     let running_clone = running.clone();
+
     let mut threads_managers: Vec<ThreadManager> = Vec::new();
     let mut threads = Vec::<thread::JoinHandle<()>>::new();
-
-    let start_time = Instant::now();
 
     for (_index, url) in env.url_origin.iter().enumerate() {
         let mut thread_object = ThreadManager::default();
@@ -29,8 +34,22 @@ pub async fn threads_manager(env: &mut CrawlerEnv) {
         threads_managers.push(thread_object);
     }
 
+    let connection = connection::connect_db("root", "onecrawlrootpass").await;
+    let client = init_db(connection);
+
+    let crawl_obj = Crawling{
+        start_url: "test".to_owned(),
+        keyword: "test".to_owned(),
+        total_page: 0,
+        duration_crawl: 0,
+    };
+
+    let result = client.insert_once("crawling", crawl_obj).await.unwrap();
+    let crawl_id = client.get_inserted_id(result.inserted_id).unwrap();
+
     let mut loop_counter = 0;
     let listener = UnixListener::bind("/tmp/temp-onecrawl-url.sock").unwrap();
+
 
     loop {
         let current_time = Instant::now();
@@ -78,6 +97,7 @@ pub async fn threads_manager(env: &mut CrawlerEnv) {
                 tld_id: worker.domain_key.to_owned(),
                 url_visited: worker.url_visited.to_owned(),
                 thread_id: thread_counters + 1,
+                crawl_id: crawl_id.to_owned(),
             };
 
             let url = worker.url_list.pop_front().unwrap();
@@ -102,7 +122,7 @@ pub async fn threads_manager(env: &mut CrawlerEnv) {
     running.store(false, Ordering::Relaxed);
     println!("crawling duration : {:?}", Instant::now() - start_time);
     for handle in threads {
-        handle.join().unwrap();
+        handle.join().unwrap_or_default();
     }
 
 }

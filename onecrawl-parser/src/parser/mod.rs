@@ -1,80 +1,77 @@
-use std::{io::Read, sync::{mpsc, Arc, Mutex}, thread};
-
+use crate::util::env;
+use std::{
+    fs,
+    time::{Duration, Instant},
+};
+// use std::os::unix::net::{UnixListener, UnixStream};
 use onecrawl_util::database::{
     connection,
-    mongodb::{init_db, page_information::model::PageInformation, MongoDB},
+    mongodb::{init_db, MongoDB},
 };
-use serde::{Serialize, Deserialize};
-use serde_json::Result;
-use std::os::unix::net::{UnixListener, UnixStream};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use serde::{Deserialize, Serialize};
+use tokio::io::AsyncReadExt;
+use tokio::net::UnixListener;
+use tokio::time::timeout;
 
 #[path = "worker/worker.rs"]
 mod worker;
 
 pub async fn parser_controller() {
-    // unimplemented!();
+    let mut env = env::ParserEnv::default();
+    env.load_env();
+
     let client = connection::connect_db("root", "onecrawlrootpass").await;
     let client_db = init_db(client);
 
-    let receiver = RpcHandler::default();
-
+    let start_time = Instant::now();
+    let timeout_duration = Duration::from_secs(env.parsing_duration + 30);
     let listener = UnixListener::bind("/tmp/temp-onecrawl-page.sock").unwrap();
-    while let Ok((stream, _)) = listener.accept() {
-        handle_client(stream, &client_db).await;
+
+    listen_message(listener, &client_db, start_time, timeout_duration).await;
+
+    if let Err(err) = fs::remove_file("/tmp/temp-onecrawl-page.sock") {
+        eprintln!("Failed to remove page UDS file: {}", err);
+    }
+
+    if let Err(err) = fs::remove_file("/tmp/temp-onecrawl-url.sock") {
+        eprintln!("Failed to remove url UDS file: {}", err);
     }
 }
 
-async fn handle_client(mut stream: std::os::unix::net::UnixStream, client: &MongoDB) {
-    // Read a message from the client
-    let mut buffer = [0; 1024];
-    let mut message = String::new();
-    let mut n = 1;
+async fn listen_message(
+    listener: UnixListener,
+    client: &MongoDB,
+    start_time: Instant,
+    timeout_duration: Duration,
+) {
+    while start_time.elapsed() < timeout_duration {
+        match timeout(timeout_duration - start_time.elapsed(), listener.accept()).await {
+            Ok(Ok((mut stream, _))) => {
+                println!("Accepted connection");
 
-    // let (sender, receiver) = mpsc::channel();
-    // let receiver = Arc::new(Mutex::new(receiver));
-    //
-    // let mut handler = Vec::<thread::JoinHandle<()>>::new();
-    // for _ in 0..2 {
-    //     let receiver = Arc::clone(&receiver);
-    //     let handle = thread::spawn(move || {
-    //         receiver.lock().unwrap().recv();
-    //     });
-    //     handler.push(handle);
-    // }
-
-    loop {
-        match stream.read(&mut buffer) {
-            Ok(0) => {
-                break;
-            }
-            Ok(bytes_read) if bytes_read > 0 => {
-                let chunk = String::from_utf8_lossy(&buffer[..bytes_read]);
-                message.push_str(&chunk);
-
-                // Check for the breakpoint to differetiate messages
-                if chunk.contains("/end_crawled_message") {
-                    // Pass the message to a blocking thread for processing
-                    // let processing_result = tokio::task::spawn_blocking(move || {
-                    //     // Process the message in a blocking thread
-                    //     process_message(&message)
-                    // }).await.unwrap();
-                    // sender.send(process_message(&mut message, client));
-                    // thread::scope(|scope| {
-                    //     scope.spawn(|| process_message(&mut message, client));
-                    // });
-                    process_message(&mut message, client).await;
-
-                    // Clear the message buffer for the next message
-                    message.clear();
+                let mut message = String::new();
+                loop {
+                    let mut buf = vec![0; 1024];
+                    let bytes_read = stream.read(&mut buf).await.unwrap();
+                    if bytes_read == 0 {
+                        break; // End of stream
+                    }
+                    let chunk = String::from_utf8_lossy(&buf[..bytes_read]);
+                    if chunk.contains("/end_crawled_message") {
+                        message.push_str(&chunk);
+                        break;
+                    }
+                    message.push_str(&chunk);
                 }
-                n = n + 1;
+
+                // Process the message (Deserialized the message, parse the HTML)
+                process_message(&mut message, client).await;
             }
-            Ok(_) => {
-                continue;
+            Ok(Err(e)) => {
+                eprintln!("Error accepting connection: {:?}", e);
             }
-            Err(e) => {
-                eprintln!("error reading from socket: {}", e);
+            Err(_) => {
+                println!("Timeout reached. Exiting.");
                 break;
             }
         }
@@ -92,4 +89,5 @@ struct RpcHandler {
     page_html: String,
     tld_id: String,
     visited_url: Vec<String>,
+    crawl_id: String,
 }
