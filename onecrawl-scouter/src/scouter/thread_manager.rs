@@ -8,7 +8,7 @@ use onecrawl_util::database::{
 };
 use std::{collections::VecDeque, io::{Error, ErrorKind}, result, sync::{Arc, atomic::{AtomicBool, Ordering}}, thread, time::{Instant, Duration}, u64};
 use serde::{Serialize, Deserialize};
-use tokio::{runtime::Runtime, net::UnixListener, io::AsyncReadExt};
+use tokio::{io::AsyncReadExt, net::UnixListener, runtime::{Handle, Runtime}};
 
 #[derive(Debug, Default)]
 pub struct ThreadManager {
@@ -24,10 +24,12 @@ pub async fn threads_manager(env: &mut CrawlerEnv) {
     let running = Arc::new(AtomicBool::new(true));
     let running_clone = running.clone();
 
+    let thread_rt = Arc::new(Handle::current());
+
     let mut threads_managers: Vec<ThreadManager> = Vec::new();
     let mut threads = Vec::<thread::JoinHandle<()>>::new();
 
-    for (_index, url) in env.url_origin.iter().enumerate() {
+    for url in env.url_origin.iter() {
         let mut thread_object = ThreadManager::default();
         thread_object.url_list.push_back(url.to_owned());
         thread_object.domain_key = url.to_owned();
@@ -69,7 +71,7 @@ pub async fn threads_manager(env: &mut CrawlerEnv) {
                     Ok(handler ) => {
                         for worker in &mut threads_managers {
                             if worker.domain_key == handler.tld_id {
-                                for link in handler.links.to_owned() {
+                                for link in handler.links.iter().cloned() {
                                     if !worker.url_list.contains(&link) {
                                         worker.url_list.push_front(link);
                                     }
@@ -105,18 +107,16 @@ pub async fn threads_manager(env: &mut CrawlerEnv) {
             page_worker.url_visited = worker.url_visited.to_owned();
 
             let running_clone = running_clone.clone();
+            let rt_clone = Arc::clone(&thread_rt);
             let handle = thread::spawn(move || {
                 while running_clone.load(Ordering::Relaxed) {
-                    let rt = Runtime::new().unwrap();
-                    rt.block_on(page_worker.page_worker()).unwrap();
+                    rt_clone.block_on(page_worker.page_worker()).unwrap();
                 }
             });
             threads.push(handle);
-            thread_counters = thread_counters + 1;
+            thread_counters += 1;
         }
-        // println!("env duration : {}", env.crawl_duration);
-        // break;
-        loop_counter = loop_counter + 1;
+        loop_counter += 1;
     }
 
     running.store(false, Ordering::Relaxed);

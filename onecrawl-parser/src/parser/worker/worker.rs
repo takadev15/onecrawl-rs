@@ -1,9 +1,9 @@
+use onecrawl_util::database::mongodb::MongoDB;
 use onecrawl_util::database::mongodb::{
     page_form::model::PageForm, page_images::model::PageImage, page_information,
     page_linking::model::PageLinking, page_list::model::PageList, page_scripts::model::PageScript,
     page_styles::model::PageStyle, page_tables::model::PageTables,
 };
-use onecrawl_util::database::mongodb::MongoDB;
 use regex::Regex;
 use select::document::Document;
 use select::predicate::{Name, Text};
@@ -16,7 +16,6 @@ use url::Url;
 use super::RpcHandler;
 
 impl RpcHandler {
-
     /// Function for parsing html string and store relevant data to the databases
     ///
     /// # Parameters
@@ -121,7 +120,16 @@ impl RpcHandler {
                             continue;
                         }
                     }
-
+                } else if href.starts_with("/") {
+                    let base_url = "https://kaskus.co.id".to_string() + href;
+                    if !self.visited_url.contains(&href.to_string()) {
+                        let page_link = PageLinking {
+                            page_id: page_id.to_owned(),
+                            outgoing_link: base_url,
+                        };
+                        links.push(href.to_string());
+                        page_link_objects.push(page_link);
+                    }
                 }
             }
         }

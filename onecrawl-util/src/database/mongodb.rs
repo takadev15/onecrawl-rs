@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use mongodb::{
     bson::{doc, oid::ObjectId, Bson},
-    results::{InsertManyResult, InsertOneResult},
+    results::{InsertManyResult, InsertOneResult}, Cursor,
 };
 use serde::{
     de::DeserializeOwned,
@@ -94,7 +94,12 @@ impl MongoDB {
     /// # Parameters
     ///
     /// - `collection`: Collection's name
-    /// - `document` : Serialized array of documents that wanted to be inserted
+    /// - `documents` : Serialized vector of documents that wanted to be inserted
+    ///
+    /// # Returns
+    ///
+    /// - `InsertOneResult`: Result
+    /// - `Error`: Error
     pub async fn insert_bulk<T: Serialize>(
         &self,
         collection: &'static str,
@@ -103,6 +108,15 @@ impl MongoDB {
         self.coll::<T>(collection).insert_many(documents, None).await
     }
 
+    /// Get inserted object's id
+    ///
+    /// # Parameters
+    ///
+    /// - `bson`: Collection's name
+    ///
+    /// # Returns
+    ///
+    /// - `String`: Result
     pub fn get_inserted_id(&self, bson: Bson) -> Option<String> {
         if let Bson::ObjectId(object_id) = bson {
             Some(object_id.to_hex())
@@ -111,6 +125,17 @@ impl MongoDB {
         }
     }
 
+    /// Check if field and value are inside the databases
+    ///
+    /// # Parameters
+    ///
+    /// - `collection`: Collection's name
+    /// - `field`: Field's name
+    /// - `value`: Field's value
+    ///
+    /// # Returns
+    ///
+    /// - `Bool`: Boolean value if the value is exist or not
     pub async fn check_value<T: DeserializeOwned>(
         &self,
         collection: &str,
@@ -133,6 +158,17 @@ impl MongoDB {
         }
     }
 
+    /// Count how many data is available in collection
+    ///
+    /// # Parameters
+    ///
+    /// - `collection`: Collection's name
+    /// - `field`: Field's name
+    /// - `value`: Field's value
+    ///
+    /// # Returns
+    ///
+    /// - `U64`: Numbers of counted items
     pub async fn count_data<T: DeserializeOwned>(
         &self,
         collection: &str,
@@ -146,5 +182,12 @@ impl MongoDB {
             .count_documents(query, None)
             .await
             .unwrap()
+    }
+
+    pub async fn finds<T: DeserializeOwned>(&self, collection: &str, table: T, field: &str, value: &str) -> Result<Cursor<T>, mongodb::error::Error> {
+        let query = doc! {
+            field : {"$regex" : value}
+        };
+        self.coll::<T>(collection).find(query, None).await
     }
 }

@@ -23,7 +23,6 @@ pub struct PageScraper {
 
 impl PageScraper {
     pub async fn page_worker(&mut self) -> Result<String> {
-        // println!("thread id : {}", self.thread_id);
         match self.url_list.pop_front().as_deref() {
             Some(url) => {
                 let start = Instant::now();
@@ -37,17 +36,16 @@ impl PageScraper {
                     .await
                     .expect("failed to get payload");
                 let duration = start.elapsed();
-                // println!("{}", resp);
                 println!("Downloaded page: {:?}", url);
                 println!("download duration: {:?}", duration);
 
-                let send_message = RpcMessage {
+                let raw_page_mes = RpcMessage {
                     page_html: resp,
                     tld_id: self.tld_id.to_owned(),
                     visited_url: self.url_visited.to_owned(),
                     crawl_id: self.crawl_id.to_owned(),
                 } ;
-                send_message.send_message().await;
+                raw_page_mes.send_message().await;
                 tokio::time::sleep(Duration::from_secs(10)).await;
                 Ok(url.to_owned())
             }
@@ -56,7 +54,6 @@ impl PageScraper {
                 Ok("".to_owned())
             }
         }
-        // Ok(())
     }
 }
 
@@ -64,8 +61,6 @@ impl RpcMessage {
     async fn send_message(&self) {
         let serialized_message = serde_json::to_string(&self).unwrap() + "/end_crawled_message";
         println!("send page : {}", self.tld_id);
-        // let listener = UnixListener::bind("/tmp/temp-onecrawl-url.sock").unwrap();
-        // let addr = listener.local_addr().unwrap();
         let mut stream = UnixStream::connect("/tmp/temp-onecrawl-page.sock").await.unwrap();
         stream
             .write_all(serialized_message.as_bytes())

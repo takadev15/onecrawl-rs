@@ -3,5 +3,5 @@
 members = [
     "onecrawl-scouter",
     "onecrawl-parser",
-    "onecrawl-util",
+    "onecrawl-util", "onequery",
 ]
