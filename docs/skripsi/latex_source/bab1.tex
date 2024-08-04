@@ -1,0 +1,86 @@
+
+%!TEX root = ./template-skripsi.tex
+%-------------------------------------------------------------------------------
+% 								BAB I
+% 							LATAR BELAKANG
+%-------------------------------------------------------------------------------
+
+\chapter{PENDAHULUAN}
+
+\section{Latar Belakang Masalah}
+
+% Intro to Search engine architecture and web crawler
+\emph{Search engine} merupakan sebuah program yang digunakan untuk menjelajahi dan mencari informasi dari web \citep{seymour2011history}. Terdapat beberapa komponen yang membangun arsitektur \emph{Search engine} seperti \emph{Web crawler}, \emph{Page rank}, dan \emph{indexer} \citep{brin1998anatomy}. Dalam proses pencarian web yang dilakukan \emph{Search engine} tahap pertama yang di lakukan adalah \emph{Web crawler} menjelajahi dan mengekstraksi data-data dari list \emph{url} lalu menyimpan data tersebut dan data lain yang terkait ke dalam database \citep{brin1998anatomy}. Data yang disimpan akan di-index, diberikan skor dan di urutkan melalui algoritma \emph{pagerank} \citep{brin1998anatomy}.
+
+% Analysis for past web crawler, algorithm, architecture, and tech stack
+\emph{Web Crawler} merupakan komponen penting dalam pembuatan arsitektur \emph{Search engine} secara keseluruhan. Penelitian sebelumnya yang telah dilakukan oleh \emph{Lazuardy Khatulisitwa} telah berhasil mengimplementasikan \emph{Web crawler} kedalam arsitektur \emph{Search engine} yang berjalan \citep{lazuardithesis}. \emph{Web crawler} tersebut mengimplentasikan algoritma \emph{Breadth First Search} dengan modifikasi algoritma \emph{similiarity based} untuk meningkatkan akurasi dari proses \emph{crawling} dan pengambilan data dari  suatu halaman \citep{lazuardithesis}. Algoritma \emph{Modified Similarity-Based} yang digunakan oleh \emph{Fathan} untuk memperbaiki akurasi dari \emph{Breadth First Search} memanfaatkan konsep penyimpanan \emph{queue} dalam melakukan proses \emph{crawling} \citep{fathanthesis} . Dalam proses tersebut \emph{crawler} akan menyimpan 2 jenis \emph{queue} yaitu, \emph{hot queue} untuk menyimpan \emph{url} yang mengandung kata \emph{anchor} sedangkan \emph{url queue} digunakan untuk menyimpan \emph{url} lain \citep{cho1998efficient}. Proses ini dapat membantu \emph{crawler} untuk mengunjungi dan melakukan \emph{crawling} ke dalam \emph{page} yang terdapat di \emph{hot queue} terlebih dahulu, bila \emph{page} yang berkaitan dengan kata \emph{anchor} di kunjungi terlebih dahulu maka \emph{child page}-nya kemungkinan besar akan memiliki konten yang berkaitan dengan kata \emph{anchor} tersebut \citep{cho1998efficient}. 
+
+Arsitektur dari \emph{crawler} yang di kembangkan oleh Lazuardi, menggunakan \emph{python} sebagai bahasa pemograman dan \emph{library} pendukung yang digunakan adalah \emph{beautifulsoup4} untuk melakukan \emph{parsing} dari halaman \emph{website}, \emph{request} untuk mengirimkan request kepada halaman \emph{website} yang ingin di ambil data-nya, dan \emph{regex} untuk melakukan pencocokan kata - kata yang telah di dapat dengan \emph{keyword} yang sudah di tentukan \citep{lazuardithesis}. Dari hasil penelitian \emph{lazuardi} terdapat beberapa saran peningkatan yang tercatat, dimana salah satunya terkait dengan meningkatkan kinerja dan peforma dari \emph{web crawler} agar memiliki penggunaan \emph{RAM} yang lebih kecil dan mencapai kinerja yang maksimal \citep{lazuardithesis}.
+
+Kinerja atau performa dari \emph{web crawler} dapat dinilai dari waktu yang diperlukan oleh \emph{web crawler} dalam menjalankan fungsi-fungsi nya. Semakin cepat waktu eksekusi dari fungsi dalam \emph{web crawler}, semakin cepat satu halaman di proses dan semakin banyak informasi yang disimpan. Informasi terkait waktu yang dilewati oleh \emph{crawler} per bagian dan bagian apa yang menghambat performa program, dapat dilakukan dengan \emph{profiling}. \emph{Profiling} adalah mekanisme dalam menghitung waktu per-pemanggilan fungsi atau bagian dari kode sehingga dapat ditentukan bagian mana dalam kode yang paling menghambat performa program. \emph{Profiling} yang dilakukan di \emph{crawler} milik lazuardy, menggunakan \emph{line profiler} sebagai alat pembantu. Target dari \emph{profiling} merupakan modul \emph{crawler} dalam file \emph{crawl.py}, fungsi, dan metode-metode lain yang dipanggil oleh modul tersebut. Profiling ini dilakukan selama 6 jam dan menggunakan 4 \emph{threads} dengan taret \emph{url} sejumlah 3.
+
+\begin{table}[H]
+  \caption{Hasil \emph{profiling} crawler lazuardy}
+  \begin{center}
+    \begin{tabular}{ |p{1cm}|p{5cm}|p{4cm}|p{3cm}| } \hline
+      \multicolumn{4}{|c|}{Hasil Profiling} \\ \hline
+      No.& Nama Operasi& \emph{Library}& Waktu Operasi Rata-Rata (ms) \\ \hline
+      1& Pengunduhan halaman \emph{website}& \emph{request}& 1,000 ms \\ \hline
+      2& Penyusunan \emph{language tree}& \emph{beautifulsoup4}& 280.5 ms \\ \hline
+      3& Pengambilan data dari \emph{queue}& \emph{queue}& 160.1 ms \\ \hline
+    \end{tabular}
+  \end{center}
+\end{table}
+
+Dari hasil \emph{profiling} dapat dilihat bahwa \emph{bottleneck} terbesar adalah proses pemanggilan \emph{request method} terhadap \emph{page}, proses ini memakan waktu rata-rata 1,000 ms atau 1 sekon yaitu sekitar 27 persen dari keseluruhan waktu pemrosesan satu halaman \emph{website}, diikuti oleh proses pembuatan \emph{language tree} yang memakan waktu rata-rata 280.5 ms per pemanggilan, dan pengambilan data \emph{url} dari \emph{queue}. Walaupun arsitektur \emph{search engine} milik lazuardy sudah menerapkan \emph{multi-threading} dalam proses \emph{scraping} per halamannya, antara proses penguduhan halaman dan penyusunan \emph{language tree} masih berada di dalam satu \emph{threads of execution} yang berarti kedua proses itu berjalan secara berurutan, ini mengakibatkan perlambatan yang signifikan dalam proses penjelajahan \emph{crawler} pada satu website dengan domain yang sama. Perbaikan yang dapat dilakukan berdasarkan fakta tersebut adalah dengan menggunakan protokol dan metode pengunduhan halaman \emph{website} yang lebih baik, pemisahan proses pengunduhan dan pembangunan \emph{language tree} sehingga dapat berjalan secara bersamaan, dan menggunakan bahasa pemograman yang memiliki efisiensi peforma yang lebih baik dari arsitekur saat ini.
+
+Salah satu metode untuk mempercepat jalannya \emph{search engine} adalah \emph{Multi-threading} \citep{multithreadedtextsearch}. Metode ini sudah pernah digunakan dalam \emph{search engine} sebelumnya, tetapi \emph{search engine} ini mencari data bukan ke \emph{web} tetapi pada kumpulan data teks atau dapat disebut dengan nama \emph{text search} \citep{multithreadedtextsearch}. Dari hasil penelitian tersebut ditemukan metode \emph{multi-threading} yang digunakan berhasil mencapai improvisasi yang sebelumnya membutuhkan waktu 16 menit dalam menjelajahi seluruh data teks menjadi 4 menit, yang berarti berhasil mencapai improviasi waktu eksekusi program sebesar 4x \citep{multithreadedtextsearch}. Dalam penelitian tersebut metode \emph{multi-threading} digunakan untuk memecah proses pengambilan data dari sumber data dan proses parsing dari data teks yang sudah di ambil \citep{multithreadedtextsearch}.
+
+Dalam konteks \emph{search engine} untuk pencarian web penelitian yang dilakukan oleh \emph{Pramudita, Y.D et all} telah menunjukkan bahwa mekanisme \emph{multi-threading} dapat diimplementasi dengan benar \citep{Pramudita_2020}. Dalam penelitian tersebut tiap-tiap \emph{thread} menjalankan satu \emph{instance} dari \emph{crawler} nya itu sendiri, dan penelitian tersebut berhasil mencapai percepatan waktu \emph{crawling} selama 123 detik \citep{Pramudita_2020}.
+
+Selanjutnya penelitian hanya akan melakukan improvisasi terhadap komponen \emph{web crawler} saja untuk membatasi area penelitian. Penelitian ini akan berusaha untuk meningkatkan performa, yang dimana merupakan jumlah halaman yang terkumpul pada waktu yang sudah definisikan. Berdasarkan hasil penelitian \emph{Pramudita, Y.D et all}, yang dimana menjalankan keseluruhan proses \emph{crawler} dalam satu thread \citep{Pramudita_2020}, maka penelitian ini akan berusaha untuk meningkatkan performa dengan memisahkan proses \emph{parsing} dalam \emph{crawler} dalam proses yang berbeda atau yang dapat disebut dengan metode \emph{multi-processing}. Selain itu penelitian ini juga akan berusaha untuk meningkatkan akurasi hasil proses \emph{crawling} dengan menggunakan algoritma \emph{breadht-first search} yang dimodifikasi dengan tujuan agar \emph{crawler} hanya menjelajahi domain yang telah ditentukan saja, sehingga diharapkan hasil proses \emph{crawling} hanya akan berisi halaman web yang diinginkan. Perbaikan lain yang akan dilakukan adalah dengan menggunakan bahasa pemograman dengan waktu eksekusi yang lebih cepat, yaitu \emph{rust} \citep{RustPerformance}. Keputusan ini didasari dari hasil pengujian bahasa pemograman \emph{rust} dalam proses dengan intensitas tinggi dan konteks \emph{low-level} \citep{RustPerformance}.
+
+
+\section{Rumusan Masalah}
+Berdasarkan uraian pada latar belakang yang diutarakan di atas, maka perumusan masalah pada penelitian ini adalah “Bagaimana cara meningkatkan performa jalan \emph{web crawler} dalam \emph{search engine} menggunakan metode \emph{multi-threading} dan \emph{multi-processing} dengan bahasa pemograman \emph{rust}?”
+
+\section{Pembatasan Masalah}
+Adapun batasan-batasan masalah yang digunakan agar lebih terarah dan sesuai dengan yang diharapkan serta terorganisasi dengan baik adalah:
+\begin{enumerate}
+  \item Modifikasi akan dilakukan terbatas pada modul \emph{crawling} berdasarkan arsitektur \emph{search engine} milik lazuardy.
+  \item Komparasi \emph{search engine} dilakukan pada mesin komputer yang sama dengan menggunakan koneksi internet yang sama.
+  \item Modifikasi tidak akan mengubah model data dalam \emph{database} \emph{search engine}.
+\end{enumerate}
+
+\section{Tujuan Penelitian}
+\begin{enumerate}
+  \item Meningkatkan peforma jalannya \emph{web crawler} dalam \emph{search engine}.
+  \item Meningkatkan akurasi hasil proses \emph{web crawling}.
+  \item Menguji penggunaan metode \emph{multi-processing} dalam \emph{web crawler}.
+\end{enumerate}
+
+\vspace{1.0cm}
+
+\section{Manfaat Penelitian}
+\begin{enumerate}
+	\item Bagi penulis
+
+  Menambah pengetahuan dalam perancangan program dengan abstraksi rendah dan performa tinggi serta menerapkannya dalam bentuk program \emph{web crawler}.
+		
+	\item Bagi Program Studi Ilmu Komputer
+
+    Penelitian ini menjadi langkah awal perbaikan \emph{search engine} dengan pembuatan \emph{crawler} berperforma tinggi, dan dapat memberikan gambaran bagi seluruh mahasiswa khususnya bagi mahasiswa program studi Ilmu Komputer Universitas Negeri Jakarta tentang proses pembuatan desain perancangan \emph{crawler} dan aplikasi \emph{multi-threding} sebagai pendukung pada penelitian \emph{search engine}.
+		
+	\item Bagi Universitas Negeri Jakarta 
+	 	
+	Menjadi pertimbangan dan evaluasi akademik khususnya Program Studi Ilmu Komputer dalam penyusunan skripsi sehingga dapat meningkatkan kualitas akademik di program studi Ilmu Komputer Universitas Negeri Jakarta serta meningkatkan kualitas lulusannya.
+	 			
+\end{enumerate}
+
+
+% Baris ini digunakan untuk membantu dalam melakukan sitasi
+% Karena diapit dengan comment, maka baris ini akan diabaikan
+% oleh compiler LaTeX.
+\begin{comment}
+\bibliography{daftar-pustaka}
+\end{comment}

@@ -1,0 +1,201 @@
+%------------------------------------------------------------------------------
+%                      Template Naskah Skripsi
+%               	Berdasarkan format JTETI FT UGM
+% 						         (c) @gunturdputra 2014
+%-------------------------------------------------------------------------------
+
+%Template pembuatan naskah skripsi.
+\documentclass{jtetiskripsi}
+
+%Untuk prefiks pada daftar gambar dan tabel
+\usepackage[titles]{tocloft}
+\renewcommand\cftfigpresnum{Gambar\  }
+\renewcommand\cfttabpresnum{Tabel\   }
+
+%Untuk hyperlink dan table of content
+\usepackage[hidelinks]{hyperref}
+\newlength{\mylenf}
+\settowidth{\mylenf}{\cftfigpresnum}
+\setlength{\cftfignumwidth}{\dimexpr\mylenf+2em}
+\setlength{\cfttabnumwidth}{\dimexpr\mylenf+2em}
+
+%Untuk Bold Face pada Keterangan Gambar
+\usepackage[labelfont=bf]{caption}
+
+%Untuk caption dan subcaption
+\usepackage{caption}
+\usepackage{subcaption}
+
+%pdf
+\usepackage{pdfpages}
+
+%table
+\usepackage{graphics}
+
+\usepackage{wrapfig}
+
+%bibliography
+\usepackage{natbib}
+
+%equation
+\usepackage{amsmath}
+
+% long table
+\usepackage{longtable}
+
+%algoritma
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+%listing
+\usepackage{listings}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{unjstyle} {
+  frame=top, frame=bottom,
+  breakatwhitespace=false,         
+  breaklines=true,                 
+  captionpos=t,
+  % backgroundcolor=\color{backcolour},   
+  commentstyle=\color{codegreen},
+  keywordstyle=\color{magenta},
+  numberstyle=\tiny\color{codegray},
+  stringstyle=\color{codepurple}
+}
+\lstset{style=unjstyle}
+
+%-----------------------------------------------------------------
+%Disini awal masukan untuk data proposal skripsi
+%-----------------------------------------------------------------
+\titleind{Perancangan Improvisasi Arsitektur \emph{Web Crawler} Berbasis \emph{Multi-Threading} dan \emph{Multi-Processing} Dengan Menggunakan Bahasa Pemrograman \emph{Rust}}
+
+\fullname{Muhammad Daffa Haryadi Putra}
+
+\idnum{1313619034}
+
+%\approvaldate{12 Februari 2019}
+\approvaldate{12 Februari 2019}
+
+\degree{Sarjana Ilmu Komputer}
+
+\yearsubmit{2024}
+
+\program{Ilmu Komputer}
+
+\dept{Ilmu Komputer}
+
+\firstsupervisor{Muhammad Eka Suryana, M. Kom.}
+\firstnip{198512232012121002}
+
+\secondsupervisor{Med Irzal, M. Kom.}
+\secondnip{197706152003121001}
+
+%-----------------------------------------------------------------
+%Disini akhir masukan untuk data proposal skripsi
+%-----------------------------------------------------------------
+
+\tolerance=1
+\emergencystretch=\maxdimen
+\hyphenpenalty=10000
+\hbadness=10000
+
+\begin{document}
+
+\cover
+
+% \includepdf[pages=-]{pdf/lembar-pengesahan.pdf}
+% \include{persetujuan}
+% \include{orisinalitas}
+
+\include{lembar-pernyataan}
+
+%-----------------------------------------------------------------
+%Disini awal masukan Acknowledment
+%-----------------------------------------------------------------
+\acknowledgment
+\begin{flushright}
+	\emph{Untuk Mamah dan Ayah.}
+\end{flushright}
+
+\include{kata-pengantar}
+\addcontentsline{toc}{chapter}{KATA PENGANTAR}
+
+%-----------------------------------------------------------------
+%Disini awal masukan Intisari
+%-----------------------------------------------------------------
+\begin{abstractind}
+\textbf{MUHAMMAD DAFFA HARYADI PUTRA}. Perancangan Improvisasi Arsitektur \emph{Web Crawler} Berbasis \emph{Multi-Threading} dan \emph{Multi-Processing} Dengan Menggunakan Bahasa Pemrograman \emph{Rust}. Skripsi. Fakultas Matematika dan Ilmu Pengetahuan Alam, Universitas Negeri Jakarta. 2024. Di bawah bimbingan Muhammad Eka Suryana, M. Kom dan Med Irzal, M. Kom.
+\vskip1cm
+	
+  Mesin pencari atau \emph{search engine} merupkan \emph{software} yang digunakan untuk melakukan pencarian terhadap informasi tertentu. Untuk menjalankan proses pencarian diperlukan jumlah data yang banyak yang terkumpul dan dapat diakses dengan mudah, proses pengumpulan data ini lah yang disebut \emph{crawling}. Penelitian ini mencoba untuk memperbaiki kekurangan-kekurangan dari \emph{crawler} versi lazuardy dengan penekanan dalam efisiensi peforma dan penggunaan \emph{computing resource}. Penelitian ini menggunakan metode \emph{multi-threading} dan \emph{multi-processing} untuk membagi beban tugas kerja dari \emph{crawler} menjadi dua modul yaitu, \emph{scouter} dan \emph{parser}, selain itu algoritma \emph{breadth-first search} yang digunakan dalam \emph{crawler} dimodifikasi untuk membatasi halaman web apa yang dapat di jelajahi oleh \emph{crawler}. Hasil akhir dari penelitian ini menunjukkan bahwa terdapat improvisasi dengan metode baru ini sebesar 17x dibandingkan dengan \emph{crawler} orisinil, dengan catatan penyeratan halaman terunduh antar \emph{domain} belum berhasil.
+	
+	\bigskip
+	\noindent
+  \textbf{Kata kunci :} \textit{Crawler}, \textit{search engine}, \textit{Rust Programming Language}, \textit{multi-threading}, \textit{multi-processing}
+\end{abstractind}
+%
+\begin{abstracteng}
+
+  \textbf {MUHAMMAD DAFFA HARYADI PUTRA}. \emph{Design Improvement on Crawler Architecture Based on Multi-threading and Multi-processing using Rust Programming Language. Mini Thesis. Faculty of Mathematics and Natural Sciences, State University of Jakarta. 2024. Under the guidence of} Muhammad Eka Suryana, M. Kom \emph{and} Med Irzal, M. Kom.
+\vskip1cm
+
+  Search engine are a software used to do a query for certain information. To run the query process, needed large size of data gathered on one place and could be accessed easily, this process of gathering those data called crawling. This research aims to fix and improve deficiency founded on previous research on crawler and search engine in general by lazuardy khatulistiwa with the emphasis on eficiency and performance of the crawler itself. This research will implemented multi-threading and multi-processing to share the workload of the crawler as two modules, scouter and parser. Besides that, this research also employed a modified breadth-first search algogithm to increase efficiency and limit what kind of page can be crawled. Final result shown that this research successfully improved the performance of the crawler by 17x with some notes that the distribution of each domain downloaded by this crawler hasn't equally distributed yet.
+
+\bigskip
+\noindent
+\textbf {Keywords:} Crawler, search engine, Rust Programming Language, multi-threading, multi-processing
+\end{abstracteng}
+%-----------------------------------------------------------------
+%Disini akhir masukan Intisari
+%-----------------------------------------------------------------
+%-----------------------------------------------------------------
+
+%-----------------------------------------------------------------
+%Disini akhir masukan untuk muka skripsi
+%-----------------------------------------------------------------
+
+\tableofcontents 
+\addcontentsline{toc}{chapter}{DAFTAR ISI}
+\listoffigures
+\addcontentsline{toc}{chapter}{DAFTAR GAMBAR}
+\listoftables
+\addcontentsline{toc}{chapter}{DAFTAR TABEL}
+
+\begin{counterpage}
+\end{counterpage}
+%Disini awal masukan untuk Bab
+%-----------------------------------------------------------------
+\include{bab1}
+\include{bab2}
+\include{bab3}
+\include{bab4}
+\include{bab5}
+
+%-----------------------------------------------------------------
+%Disini akhir masukan Bab
+%-----------------------------------------------------------------
+
+
+%-----------------------------------------------------------------
+% Disini awal masukan untuk Daftar Pustaka
+% - Daftar pustaka diambil dari file .bib yang ada pada folder ini
+%   juga.
+% - Untuk memudahkan dalam memanajemen dan menggenerate file .bib
+%   gunakan reference manager seperti Mendeley, Zotero, EndNote,
+%   dll.
+%-----------------------------------------------------------------
+\bibliographystyle{apalike}
+\bibliography{daftar-pustaka}
+\addcontentsline{toc}{chapter}{DAFTAR PUSTAKA}
+%-----------------------------------------------------------------
+%Disini akhir masukan Daftar Pustaka
+%-----------------------------------------------------------------
+
+\include{cv}
+\include{metadata}
+
+\end{document}

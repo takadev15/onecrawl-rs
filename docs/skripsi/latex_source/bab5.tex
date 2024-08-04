@@ -1,0 +1,36 @@
+%!TEX root = ./template-skripsi.tex
+%-------------------------------------------------------------------------------
+%                            	BAB IV
+%               		KESIMPULAN DAN SARAN
+%-------------------------------------------------------------------------------
+
+\chapter{KESIMPULAN DAN SARAN}
+
+\section{Kesimpulan}
+Berdasarkan hasil implementasi dan pengujian fitur sistem informasi yang telah dirancang, maka diperoleh kesimpulan sebagai berikut:
+
+\begin{enumerate}
+  \item \emph{Crawler} berhasil mengumpulkan data dari halaman web yang \emph{domain}-nya telah di definiskan dalam \emph{origin url}.
+  \item Dari perbandingan hasil proses \emph{crawling} bahasa pemograman berabstraksi rendah lebih cocok untuk digunakan dalam \emph{high-intensity application} seperti \emph{web crawler} ini.
+  \item Migrasi \emph{database} dari berbasis \emph{SQL} menuju berbasis \emph{MonggoDB} berhasil dan data yang tersimpan konsisten.
+  \item \emph{Crawler} yang dirancang menggunakan metode \emph{multi-threading} berhasil mengumpulkan jumlah halaman web lebih banyak daripada \emph{crawler} sebelumnya.
+  \item Algoritma \emph{breadth-first search} termodifikasi dalam skripsi ini belum cukup untuk meningkatkan akurasi proses \emph{crawling} terhadap halaman web yang didefiniskan oleh \emph{top-level domain}.
+  \item Penggunaan \emph{resource} lebih banyak berada di \emph{scouter service} bila dibandingkan dengan \emph{parser service}.
+\end{enumerate}
+
+\section{Saran}
+Adapun saran untuk penelitian selanjutnya adalah:
+\begin{enumerate} 
+  \item Melanjutkan penelitian dalam eksplorasi algoritma \emph{crawler} lain untuk meningkatkan akurasi pengumpulan halaman web yang telah didefinisikan oleh \emph{top-level domain}.
+  \item Melanjutkan penelitian dalam eksplorasi algoritma \emph{information retrieval} yang mengakomodasi lebih banyak jenis \emph{website}.
+  \item Eksplorasi penggunaan \emph{filesystem} sebagai platform untuk menyimpan data hasil \emph{crawling} untuk mengakomodasi struktur halaman web yang berbeda-berbeda.
+  \item Eksplorasi implementasi \emph{distributed crawler} dengan menggunakan skema \emph{multi-threading} dengan bahasa pemograman berabstraksi rendah seperti \emph{Rust}, \emph{C/C++}, atau \emph{Zig}.
+\end{enumerate}
+
+
+% Baris ini digunakan untuk membantu dalam melakukan sitasi
+% Karena diapit dengan comment, maka baris ini akan diabaikan
+% oleh compiler LaTeX.
+\begin{comment}
+\bibliography{daftar-pustaka}
+\end{comment}
