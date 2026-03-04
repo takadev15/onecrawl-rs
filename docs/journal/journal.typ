@@ -36,7 +36,6 @@ Selanjutnya penelitian hanya akan melakukan improvisasi terhadap komponen #emph[
 
 Mesin Pencari atau #emph[Search Engine] merupakan software yang digunakan untuk pencarian terhadap banyak situs web di internet berdasarkan input kata yang ditanyakan. #emph[Search Engine] memungkinkan pengguna untuk mencari situs web yang berkaitan dengan kata kunci ataupun pertanyaan yang diajukan oleh pengguna @seymour2011history. Dalam penggunaannya, search engine hanyalah sebuah halaman situs website yang dapat diakses oleh pengguna yang perannya adalah mengumpulkan dan menampilkan hasil pencarian tersebut kepada user dengan tampilan yang menarik dan informatif @seymour2011history. 
 
-
 == Arsitektur #emph[Search Engine]
 
 Secara sederhana #emph[Search Engine] bekerja dengan menyimpan dan melakukan pengindeksan informasi-informasi dari situs web dan menyajikannya dalam bentuk yang dapat di mengerti oleh pengguna. Informasi dari halaman situs web didapatkan menggunakan program bernama #emph[Web crawler] yang mengunduh dan menyimpan informasi dari halaman situs web kedalam #emph[Database]. Setelah di simpan, infomasi akan dianalisis dan dipilih oleh program #emph[Indexer] @lazuardithesis.
